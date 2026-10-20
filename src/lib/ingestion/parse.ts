@@ -10,8 +10,12 @@ export async function parseDocument(file: Buffer, filename: string): Promise<str
     throw new Error("Missing UNSTRUCTURED_API_URL or UNSTRUCTURED_API_KEY");
   }
 
+  // Buffer's underlying ArrayBufferLike isn't assignable to BlobPart under
+  // strict TS; a plain Uint8Array copy of the same bytes is.
+  const bytes = new Uint8Array(file);
+
   const form = new FormData();
-  form.append("files", new Blob([file]), filename);
+  form.append("files", new Blob([bytes]), filename);
   form.append("strategy", "auto");
 
   const response = await fetch(apiUrl, {
