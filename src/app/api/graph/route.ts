@@ -12,6 +12,12 @@ const PLACEHOLDER_ORG_ID = "00000000-0000-0000-0000-000000000000";
  */
 export async function GET(request: NextRequest) {
   const orgId = request.nextUrl.searchParams.get("orgId") ?? PLACEHOLDER_ORG_ID;
-  const graph = await buildGraph(orgId);
-  return NextResponse.json(graph, { headers: { "cache-control": "no-store" } });
+  try {
+    const graph = await buildGraph(orgId);
+    return NextResponse.json(graph, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    console.error("graph route failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

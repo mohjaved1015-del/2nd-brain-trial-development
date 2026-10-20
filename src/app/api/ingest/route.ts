@@ -16,14 +16,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "orgId, source, and file are required" }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const result = await ingestDocument({
-    orgId,
-    source,
-    title: file.name,
-    file: buffer,
-    filename: file.name,
-  });
-
-  return NextResponse.json(result);
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await ingestDocument({
+      orgId,
+      source,
+      title: file.name,
+      file: buffer,
+      filename: file.name,
+    });
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("ingest route failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

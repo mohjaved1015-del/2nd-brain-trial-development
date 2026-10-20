@@ -21,9 +21,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "orgId and question are required" }, { status: 400 });
   }
 
-  const candidates = await keywordSearch(orgId, question);
-  const topSources = await rerank(question, candidates);
-  const answer = await generateAnswer(question, topSources, history ?? []);
-
-  return NextResponse.json(answer);
+  try {
+    const candidates = await keywordSearch(orgId, question);
+    const topSources = await rerank(question, candidates);
+    const answer = await generateAnswer(question, topSources, history ?? []);
+    return NextResponse.json(answer);
+  } catch (error) {
+    console.error("chat route failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
