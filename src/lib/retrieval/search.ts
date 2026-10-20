@@ -1,30 +1,35 @@
 import { createServiceClient } from "@/lib/supabase/server";
-import { embedTexts } from "@/lib/ingestion/embed";
-import type { HybridSearchResult } from "@/lib/supabase/types";
+import type { SearchResult } from "@/lib/supabase/types";
 
 /**
- * Calls the `hybrid_search` Postgres function (vector + full-text, RRF
- * merged — see supabase/migrations/0002_hybrid_search.sql). This is the
- * candidate-generation stage; results still need reranking (see
- * ./rerank.ts) before they're trustworthy enough to hand to the LLM.
+ * Calls the `keyword_search` Postgres function (pure full-text ranking —
+ * see supabase/migrations/0003_keyword_search.sql). No embeddings vendor
+ * involved, no extra API key, scales as an org's document count grows.
+ *
+ * This replaced vector+hybrid search (see decisions/log.md): the
+ * `hybrid_search` SQL function from migration 0002 is left in place,
+ * unused, as the documented path back to it once there's a reason to pay
+ * for an embeddings vendor again.
+ *
+ * Known limitation: a follow-up question like "what about electronics?"
+ * won't retrieve well on its own, since this searches only the literal
+ * words in `query` — it doesn't resolve pronouns/ellipsis against earlier
+ * turns. Conversation history is passed to generation (see
+ * generation/answer.ts) but not yet used to reformulate the search query.
  */
-export async function hybridSearch(
+export async function keywordSearch(
   orgId: string,
   query: string,
   matchCount = 40,
-): Promise<HybridSearchResult[]> {
-  const [queryEmbedding] = await embedTexts([query]);
-  if (!queryEmbedding) throw new Error("Failed to embed query text");
-
+): Promise<SearchResult[]> {
   const supabase = createServiceClient();
 
-  const { data, error } = await supabase.rpc("hybrid_search", {
+  const { data, error } = await supabase.rpc("keyword_search", {
     query_org_id: orgId,
-    query_embedding: queryEmbedding,
     query_text: query,
     match_count: matchCount,
   });
 
-  if (error) throw new Error(`hybrid_search failed: ${error.message}`);
+  if (error) throw new Error(`keyword_search failed: ${error.message}`);
   return data ?? [];
 }

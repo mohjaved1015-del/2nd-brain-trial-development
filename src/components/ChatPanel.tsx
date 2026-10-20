@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import type { HybridSearchResult } from "@/lib/supabase/types";
+import type { SearchResult } from "@/lib/supabase/types";
 
 interface ChatTurn {
   question: string;
   answer: string;
-  sources: HybridSearchResult[];
+  sources: SearchResult[];
 }
 
 /**
- * Minimal chat UI: proves the retrieval + citation loop end to end.
- * Deliberately no streaming/markdown/polish yet — that's pitch-polish
- * work for after retrieval quality is validated (see STATUS.md build order).
+ * Minimal chat UI: proves the retrieval + citation + conversation-memory
+ * loop end to end. Deliberately no streaming/markdown/polish yet — that's
+ * pitch-polish work for after retrieval quality is validated (see
+ * STATUS.md build order). The actual intended frontend is the 3D-Brain
+ * shell rebuild, not this page — see decisions/log.md.
  */
 export function ChatPanel({ orgId }: { orgId: string }) {
   const [question, setQuestion] = useState("");
@@ -23,10 +25,11 @@ export function ChatPanel({ orgId }: { orgId: string }) {
     if (!question.trim()) return;
     setLoading(true);
     try {
+      const history = turns.map((turn) => ({ question: turn.question, answer: turn.answer }));
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId, question }),
+        body: JSON.stringify({ orgId, question, history }),
       });
       const data = await response.json();
       setTurns((prev) => [...prev, { question, answer: data.text, sources: data.citedSources ?? [] }]);

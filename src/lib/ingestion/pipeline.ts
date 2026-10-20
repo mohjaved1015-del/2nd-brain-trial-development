@@ -1,7 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { parseDocument } from "./parse";
 import { chunkText } from "./chunk";
-import { embedTexts } from "./embed";
 
 export interface IngestOptions {
   orgId: string;
@@ -14,12 +13,16 @@ export interface IngestOptions {
 /**
  * The one swappable seam the architecture doc calls for: trial data today,
  * real customer sources (Drive, CRM, email) later, all through this same
- * parse -> chunk -> embed -> store pipeline.
+ * parse -> chunk -> store pipeline.
+ *
+ * No embedding step: retrieval is keyword-only for now (see
+ * retrieval/search.ts and decisions/log.md), so chunks are stored without
+ * an embedding. The `chunks.embedding` column stays nullable for when
+ * vector search comes back.
  */
 export async function ingestDocument({ orgId, source, title, file, filename }: IngestOptions) {
   const rawText = await parseDocument(file, filename);
   const chunks = chunkText(rawText);
-  const embeddings = await embedTexts(chunks.map((chunk) => chunk.content));
 
   const supabase = createServiceClient();
 
@@ -33,17 +36,12 @@ export async function ingestDocument({ orgId, source, title, file, filename }: I
     throw new Error(`Failed to insert document: ${documentError?.message}`);
   }
 
-  const rows = chunks.map((chunk, i) => {
-    const embedding = embeddings[i];
-    if (!embedding) throw new Error(`Missing embedding for chunk ${i}`);
-    return {
-      org_id: orgId,
-      document_id: document.id,
-      chunk_index: chunk.index,
-      content: chunk.content,
-      embedding,
-    };
-  });
+  const rows = chunks.map((chunk) => ({
+    org_id: orgId,
+    document_id: document.id,
+    chunk_index: chunk.index,
+    content: chunk.content,
+  }));
 
   const { error: chunksError } = await supabase.from("chunks").insert(rows);
   if (chunksError) throw new Error(`Failed to insert chunks: ${chunksError.message}`);

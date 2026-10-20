@@ -19,7 +19,7 @@ export interface Document {
   created_at: string;
 }
 
-export interface HybridSearchResult {
+export interface SearchResult {
   id: string;
   document_id: string;
   content: string;

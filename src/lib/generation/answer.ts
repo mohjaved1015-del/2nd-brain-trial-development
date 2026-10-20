@@ -1,14 +1,22 @@
-import type { HybridSearchResult } from "@/lib/supabase/types";
+import type { SearchResult } from "@/lib/supabase/types";
 
 const SYSTEM_PROMPT = `You are a company's internal knowledge assistant. Answer only using the
 numbered source excerpts provided below. Cite sources inline like [1], [2].
 If the excerpts don't contain the answer, say you don't know — never guess
-or use outside knowledge.`;
+or use outside knowledge. Earlier turns in this conversation may give you
+context for what a follow-up question like "what about X?" refers to.`;
+
+export interface ChatHistoryTurn {
+  question: string;
+  answer: string;
+}
 
 export interface AnswerResult {
   text: string;
-  citedSources: HybridSearchResult[];
+  citedSources: SearchResult[];
 }
+
+const MAX_HISTORY_TURNS = 6;
 
 /**
  * Generation via Gemini.
@@ -17,11 +25,19 @@ export interface AnswerResult {
  * plan uses Claude Sonnet, chosen specifically for its strength at
  * answering only from given context and saying "I don't know." Gemini's
  * free tier lets us validate the retrieval pipeline without a paid key
- * first. Swap back to src/lib/generation/answer.ts using @anthropic-ai/sdk
- * once there's budget — re-run the eval questions after switching, since
- * citation discipline can differ between models.
+ * first. Swap back to Claude once there's budget.
+ *
+ * `history` is prior Q&A turns from the same conversation, capped to the
+ * most recent few — this is real conversation memory (Gemini sees the
+ * actual prior turns, not just a text summary), not a search-side
+ * improvement. See retrieval/search.ts for the known limitation that
+ * follow-up questions don't yet improve the search query itself.
  */
-export async function generateAnswer(question: string, sources: HybridSearchResult[]): Promise<AnswerResult> {
+export async function generateAnswer(
+  question: string,
+  sources: SearchResult[],
+  history: ChatHistoryTurn[] = [],
+): Promise<AnswerResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
@@ -30,12 +46,18 @@ export async function generateAnswer(question: string, sources: HybridSearchResu
 
   const context = sources.map((source, i) => `[${i + 1}] ${source.content}`).join("\n\n");
 
+  const historyContents = history.slice(-MAX_HISTORY_TURNS).flatMap((turn) => [
+    { role: "user", parts: [{ text: turn.question }] },
+    { role: "model", parts: [{ text: turn.answer }] },
+  ]);
+
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [
+        ...historyContents,
         {
           role: "user",
           parts: [{ text: `Sources:\n\n${context}\n\nQuestion: ${question}` }],

@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hybridSearch } from "@/lib/retrieval/search";
+import { keywordSearch } from "@/lib/retrieval/search";
 import { rerank } from "@/lib/retrieval/rerank";
-import { generateAnswer } from "@/lib/generation/answer";
+import { generateAnswer, type ChatHistoryTurn } from "@/lib/generation/answer";
 
 /**
- * Chat endpoint. Resolves candidates via hybrid search, reranks, then
- * generates a cited answer. orgId is a placeholder until Supabase Auth is
- * wired in — it should come from the authenticated session, not the
- * request body, once that exists.
+ * Chat endpoint. Resolves candidates via keyword search, reranks, then
+ * generates a cited answer using the conversation's recent history.
+ * orgId is a placeholder until Supabase Auth is wired in — it should
+ * come from the authenticated session, not the request body, once that
+ * exists.
  */
 export async function POST(request: NextRequest) {
-  const { orgId, question } = await request.json();
+  const { orgId, question, history } = (await request.json()) as {
+    orgId?: string;
+    question?: string;
+    history?: ChatHistoryTurn[];
+  };
 
   if (!orgId || !question) {
     return NextResponse.json({ error: "orgId and question are required" }, { status: 400 });
   }
 
-  const candidates = await hybridSearch(orgId, question);
+  const candidates = await keywordSearch(orgId, question);
   const topSources = await rerank(question, candidates);
-  const answer = await generateAnswer(question, topSources);
+  const answer = await generateAnswer(question, topSources, history ?? []);
 
   return NextResponse.json(answer);
 }
