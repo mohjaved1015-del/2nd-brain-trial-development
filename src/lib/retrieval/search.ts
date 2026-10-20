@@ -14,6 +14,8 @@ export async function hybridSearch(
   matchCount = 40,
 ): Promise<HybridSearchResult[]> {
   const [queryEmbedding] = await embedTexts([query]);
+  if (!queryEmbedding) throw new Error("Failed to embed query text");
+
   const supabase = createServiceClient();
 
   const { data, error } = await supabase.rpc("hybrid_search", {

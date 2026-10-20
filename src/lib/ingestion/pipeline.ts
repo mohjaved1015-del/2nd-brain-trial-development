@@ -33,13 +33,17 @@ export async function ingestDocument({ orgId, source, title, file, filename }: I
     throw new Error(`Failed to insert document: ${documentError?.message}`);
   }
 
-  const rows = chunks.map((chunk, i) => ({
-    org_id: orgId,
-    document_id: document.id,
-    chunk_index: chunk.index,
-    content: chunk.content,
-    embedding: embeddings[i],
-  }));
+  const rows = chunks.map((chunk, i) => {
+    const embedding = embeddings[i];
+    if (!embedding) throw new Error(`Missing embedding for chunk ${i}`);
+    return {
+      org_id: orgId,
+      document_id: document.id,
+      chunk_index: chunk.index,
+      content: chunk.content,
+      embedding,
+    };
+  });
 
   const { error: chunksError } = await supabase.from("chunks").insert(rows);
   if (chunksError) throw new Error(`Failed to insert chunks: ${chunksError.message}`);
