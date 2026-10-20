@@ -1,25 +1,37 @@
 /**
- * OpenAI text-embedding-3-small, 1536 dims — matches the `chunks.embedding`
- * column in the schema. If the embeddings model ever changes, the column
- * dimension and this function need to change together.
+ * Embeddings via Gemini (gemini-embedding-001), requested at 1536
+ * dimensions to match the `chunks.embedding` column without a schema
+ * change.
+ *
+ * TEMPORARY TESTING SUBSTITUTION — see decisions/log.md: the original
+ * plan uses OpenAI text-embedding-3-small. Gemini's free tier lets us
+ * test the pipeline end to end with no paid key. Swap back (and re-embed
+ * existing chunks) once there's budget, since embeddings from different
+ * models aren't interchangeable.
  */
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
-  const response = await fetch("https://api.openai.com/v1/embeddings", {
+  const model = process.env.GEMINI_EMBEDDING_MODEL ?? "gemini-embedding-001";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:batchEmbedContents?key=${apiKey}`;
+
+  const response = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: "text-embedding-3-small", input: texts }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: texts.map((text) => ({
+        model: `models/${model}`,
+        content: { parts: [{ text }] },
+        outputDimensionality: 1536,
+      })),
+    }),
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI embeddings failed (${response.status}): ${await response.text()}`);
+    throw new Error(`Gemini embeddings failed (${response.status}): ${await response.text()}`);
   }
 
-  const body: { data: Array<{ embedding: number[] }> } = await response.json();
-  return body.data.map((item) => item.embedding);
+  const body: { embeddings: Array<{ values: number[] }> } = await response.json();
+  return body.embeddings.map((embedding) => embedding.values);
 }

@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { HybridSearchResult } from "@/lib/supabase/types";
 
 const SYSTEM_PROMPT = `You are a company's internal knowledge assistant. Answer only using the
@@ -12,37 +11,45 @@ export interface AnswerResult {
 }
 
 /**
- * Generation stage. Takes already-retrieved-and-reranked chunks (never
- * fetches them itself) so this stays swappable from the retrieval logic
- * and testable on its own with fixed inputs.
+ * Generation via Gemini.
+ *
+ * TEMPORARY TESTING SUBSTITUTION — see decisions/log.md: the original
+ * plan uses Claude Sonnet, chosen specifically for its strength at
+ * answering only from given context and saying "I don't know." Gemini's
+ * free tier lets us validate the retrieval pipeline without a paid key
+ * first. Swap back to src/lib/generation/answer.ts using @anthropic-ai/sdk
+ * once there's budget — re-run the eval questions after switching, since
+ * citation discipline can differ between models.
  */
 export async function generateAnswer(question: string, sources: HybridSearchResult[]): Promise<AnswerResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5-5";
-  const client = new Anthropic({ apiKey });
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const context = sources
-    .map((source, i) => `[${i + 1}] ${source.content}`)
-    .join("\n\n");
+  const context = sources.map((source, i) => `[${i + 1}] ${source.content}`).join("\n\n");
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `Sources:\n\n${context}\n\nQuestion: ${question}`,
-      },
-    ],
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `Sources:\n\n${context}\n\nQuestion: ${question}` }],
+        },
+      ],
+    }),
   });
 
-  const text = response.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("");
+  if (!response.ok) {
+    throw new Error(`Gemini generation failed (${response.status}): ${await response.text()}`);
+  }
+
+  const body: { candidates: Array<{ content: { parts: Array<{ text?: string }> } }> } = await response.json();
+  const text = (body.candidates[0]?.content.parts ?? []).map((part) => part.text ?? "").join("");
 
   return { text, citedSources: sources };
 }
