@@ -10,11 +10,11 @@ interface ChatTurn {
 }
 
 /**
- * Minimal chat UI: proves the retrieval + citation + conversation-memory
- * loop end to end. Deliberately no streaming/markdown/polish yet — that's
- * pitch-polish work for after retrieval quality is validated (see
- * STATUS.md build order). The actual intended frontend is the 3D-Brain
- * shell rebuild, not this page — see decisions/log.md.
+ * Chat UI: proves the retrieval + citation + conversation-memory loop end
+ * to end, with basic real styling (see globals.css) so it reads as a
+ * product, not a bare form. The intended final frontend is still the
+ * 3D-Brain shell rebuild, not this page — see decisions/log.md. This is
+ * a quick, separate styling pass, not that rebuild.
  */
 export function ChatPanel({ orgId }: { orgId: string }) {
   const [question, setQuestion] = useState("");
@@ -40,28 +40,37 @@ export function ChatPanel({ orgId }: { orgId: string }) {
   }
 
   return (
-    <div>
-      {turns.map((turn, i) => (
-        <div key={i}>
-          <p><strong>Q:</strong> {turn.question}</p>
-          <p><strong>A:</strong> {turn.answer}</p>
-          <ol>
-            {turn.sources.map((source) => (
-              <li key={source.id}>{source.content.slice(0, 120)}...</li>
-            ))}
-          </ol>
+    <>
+      <div className="turns">
+        {turns.length === 0 && <p className="empty-state">Ask a question to get started.</p>}
+        {turns.map((turn, i) => (
+          <div className="turn" key={i}>
+            <p className="bubble question">{turn.question}</p>
+            <p className="bubble answer">{turn.answer}</p>
+            {turn.sources.length > 0 && (
+              <ol className="sources">
+                {turn.sources.map((source) => (
+                  <li key={source.id}>{source.content.slice(0, 120)}...</li>
+                ))}
+              </ol>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="composer">
+        <div className="composer-inner">
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && ask()}
+            placeholder="Ask your second brain..."
+            disabled={loading}
+          />
+          <button onClick={ask} disabled={loading}>
+            {loading ? "Thinking..." : "Ask"}
+          </button>
         </div>
-      ))}
-      <input
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && ask()}
-        placeholder="Ask your second brain..."
-        disabled={loading}
-      />
-      <button onClick={ask} disabled={loading}>
-        {loading ? "Thinking..." : "Ask"}
-      </button>
-    </div>
+      </div>
+    </>
   );
 }

@@ -5,7 +5,7 @@ const PLACEHOLDER_ORG_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function Home() {
   return (
-    <main>
+    <main className="page">
       <h1>Second Brain</h1>
       <ChatPanel orgId={PLACEHOLDER_ORG_ID} />
     </main>
