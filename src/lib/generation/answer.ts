@@ -23,59 +23,61 @@ export interface AnswerResult {
 const MAX_HISTORY_TURNS = 6;
 
 /**
- * Generation via Gemini.
+ * Generation via NVIDIA NIM (OpenAI-compatible chat completions API).
  *
  * TEMPORARY TESTING SUBSTITUTION — see decisions/log.md: the original
  * plan uses Claude Sonnet, chosen specifically for its strength at
- * answering only from given context and saying "I don't know." Gemini's
- * free tier lets us validate the retrieval pipeline without a paid key
- * first. Swap back to Claude once there's budget.
+ * answering only from given context and saying "I don't know." NIM's
+ * free tier lets us validate the pipeline without a paid key; swapped
+ * in from Gemini after repeated free-tier 503s there. Swap back to
+ * Claude once there's budget — re-run the eval questions after
+ * switching, since citation/refusal discipline can differ between
+ * models.
  *
  * `history` is prior Q&A turns from the same conversation, capped to the
- * most recent few — this is real conversation memory (Gemini sees the
- * actual prior turns, not just a text summary), not a search-side
- * improvement. See retrieval/search.ts for the known limitation that
- * follow-up questions don't yet improve the search query itself.
+ * most recent few — real conversation memory (the model sees the actual
+ * prior turns), not a search-side improvement. See retrieval/search.ts
+ * for the known limitation that follow-up questions don't yet improve
+ * the search query itself.
  */
 export async function generateAnswer(
   question: string,
   sources: SearchResult[],
   history: ChatHistoryTurn[] = [],
 ): Promise<AnswerResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
+  const apiKey = process.env.NVIDIA_API_KEY;
+  if (!apiKey) throw new Error("Missing NVIDIA_API_KEY");
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-3.8-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
+  const model = process.env.NVIDIA_MODEL ?? "meta/llama-3.3-70b-instruct";
   const context = sources.map((source, i) => `[${i + 1}] ${source.content}`).join("\n\n");
 
-  const historyContents = history.slice(-MAX_HISTORY_TURNS).flatMap((turn) => [
-    { role: "user", parts: [{ text: turn.question }] },
-    { role: "model", parts: [{ text: turn.answer }] },
+  const historyMessages = history.slice(-MAX_HISTORY_TURNS).flatMap((turn) => [
+    { role: "user", content: turn.question },
+    { role: "assistant", content: turn.answer },
   ]);
 
-  const response = await fetch(url, {
+  const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [
-        ...historyContents,
-        {
-          role: "user",
-          parts: [{ text: `Sources:\n\n${context}\n\nQuestion: ${question}` }],
-        },
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...historyMessages,
+        { role: "user", content: `Sources:\n\n${context}\n\nQuestion: ${question}` },
       ],
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini generation failed (${response.status}): ${await response.text()}`);
+    throw new Error(`NVIDIA NIM generation failed (${response.status}): ${await response.text()}`);
   }
 
-  const body: { candidates: Array<{ content: { parts: Array<{ text?: string }> } }> } = await response.json();
-  const text = (body.candidates[0]?.content.parts ?? []).map((part) => part.text ?? "").join("");
+  const body: { choices: Array<{ message: { content?: string } }> } = await response.json();
+  const text = body.choices[0]?.message.content ?? "";
 
   return { text, citedSources: sources };
 }
