@@ -26,3 +26,21 @@ export interface SearchResult {
   metadata: Record<string, unknown>;
   score: number;
 }
+
+export interface Conversation {
+  id: string;
+  org_id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  org_id: string;
+  role: "user" | "assistant";
+  content: string;
+  sources: SearchResult[];
+  created_at: string;
+}
