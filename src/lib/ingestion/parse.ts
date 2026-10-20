@@ -1,7 +1,7 @@
 /**
  * Document parsing via Unstructured.io. Kept isolated behind this one
  * function so the parsing vendor can be swapped without touching
- * chunking, embedding, or anything upstream.
+ * chunking or anything downstream.
  */
 export async function parseDocument(file: Buffer, filename: string): Promise<string> {
   const apiUrl = process.env.UNSTRUCTURED_API_URL;

@@ -10,11 +10,12 @@ interface ChatTurn {
 }
 
 /**
- * Chat UI: proves the retrieval + citation + conversation-memory loop end
- * to end, with basic real styling (see globals.css) so it reads as a
- * product, not a bare form. The intended final frontend is still the
- * 3D-Brain shell rebuild, not this page — see decisions/log.md. This is
- * a quick, separate styling pass, not that rebuild.
+ * Chat UI proving the retrieval + citation + conversation-memory loop end
+ * to end. No longer rendered on the homepage — the 3D-Brain view
+ * (src/app/page.tsx) is the real frontend now. This component's styling
+ * (the dark theme / chat-bubble CSS that used to live in globals.css) was
+ * removed along with that file; this is currently unstyled again until
+ * it's wired into the 3D view as a feature (see decisions/log.md).
  */
 export function ChatPanel({ orgId }: { orgId: string }) {
   const [question, setQuestion] = useState("");

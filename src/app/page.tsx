@@ -1,5 +1,3 @@
-import Script from "next/script";
-
 /**
  * This is the 3D-Brain renderer's own markup (from the personal-AIOS
  * kit's .claude/skills/3d-brain/assets/template/index.html), ported in
@@ -143,16 +141,22 @@ const BRAIN_MARKUP = `
   </footer>
 `;
 
+const DISABLE_POINTER_LOCK = `for (const name of ['requestPointerLock', 'webkitRequestPointerLock', 'setCapture']) {
+  Object.defineProperty(Element.prototype, name, { configurable: true, value: function () {} });
+}`;
+
 export default function Home() {
   return (
     <>
+      {/* Plain inline scripts, not next/script: this needs to run synchronously,
+          in document order, before app.js — matching the original index.html's
+          actual mechanism rather than relying on Next's loading-strategy timing,
+          which is meant for a different use case (progressive page loading) and
+          whose "beforeInteractive" strategy is documented to only be reliable in
+          the root layout, not an ordinary page. */}
+      <script dangerouslySetInnerHTML={{ __html: DISABLE_POINTER_LOCK }} />
       <div dangerouslySetInnerHTML={{ __html: BRAIN_MARKUP }} />
-      <Script id="disable-pointer-lock" strategy="beforeInteractive">
-        {`for (const name of ['requestPointerLock', 'webkitRequestPointerLock', 'setCapture']) {
-          Object.defineProperty(Element.prototype, name, { configurable: true, value: function () {} });
-        }`}
-      </Script>
-      <Script type="module" src="/app.js" strategy="afterInteractive" />
+      <script type="module" src="/app.js" />
     </>
   );
 }
