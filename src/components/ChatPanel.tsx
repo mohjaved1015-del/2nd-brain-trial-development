@@ -71,6 +71,20 @@ export function ChatPanel({ orgId }: { orgId: string }) {
     setTurns((prev) => [...prev, { question: label, answer: result, sources: [] }]);
   }
 
+  /**
+   * Reloads the page after a successful upload, same pattern the
+   * renderer's own "Rebuild from disk" button already uses (see
+   * .claude/skills/3d-brain/assets/template/src/app.js) — the graph
+   * only fetches its data once on load, so this is how a new document
+   * actually appears without deep surgery on that prebuilt Three.js
+   * scene. The chat panel reopens automatically after reload (see
+   * ChatToggle.tsx), and conversation history survives it (persisted in
+   * Supabase), so this isn't as disruptive as a plain refresh would be.
+   */
+  function refreshGraphSoon() {
+    setTimeout(() => window.location.reload(), 1200);
+  }
+
   async function ask() {
     const trimmed = question.trim();
     if (!trimmed) return;
@@ -109,10 +123,12 @@ export function ChatPanel({ orgId }: { orgId: string }) {
         body: JSON.stringify({ orgId, source: "link", url }),
       });
       const data = await response.json();
-      addSystemTurn(
-        `Add link: ${url}`,
-        response.ok ? `Added to your second brain (${data.chunkCount} chunks).` : `Couldn't add that link: ${data.error}`,
-      );
+      if (response.ok) {
+        addSystemTurn(`Add link: ${url}`, `Added to your second brain (${data.chunkCount} chunks). Refreshing the graph...`);
+        refreshGraphSoon();
+      } else {
+        addSystemTurn(`Add link: ${url}`, `Couldn't add that link: ${data.error}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -128,10 +144,12 @@ export function ChatPanel({ orgId }: { orgId: string }) {
 
       const response = await fetch("/api/ingest", { method: "POST", body: formData });
       const data = await response.json();
-      addSystemTurn(
-        `Add file: ${file.name}`,
-        response.ok ? `Added to your second brain (${data.chunkCount} chunks).` : `Couldn't add that file: ${data.error}`,
-      );
+      if (response.ok) {
+        addSystemTurn(`Add file: ${file.name}`, `Added to your second brain (${data.chunkCount} chunks). Refreshing the graph...`);
+        refreshGraphSoon();
+      } else {
+        addSystemTurn(`Add file: ${file.name}`, `Couldn't add that file: ${data.error}`);
+      }
     } finally {
       setLoading(false);
     }
