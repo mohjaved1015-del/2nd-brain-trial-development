@@ -1,4 +1,5 @@
 import { ChatToggle } from "@/components/ChatToggle";
+import { RevealBridge } from "@/components/RevealBridge";
 
 /**
  * This is the 3D-Brain renderer's own markup (from the personal-AIOS
@@ -164,6 +165,7 @@ export default function Home() {
       <div dangerouslySetInnerHTML={{ __html: BRAIN_MARKUP }} />
       <script type="module" src="/app.js" />
       <ChatToggle orgId={PLACEHOLDER_ORG_ID} />
+      <RevealBridge orgId={PLACEHOLDER_ORG_ID} />
     </>
   );
 }
