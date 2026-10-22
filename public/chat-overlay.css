@@ -2,6 +2,19 @@
    style.css (the renderer's own stylesheet, untouched) so this can be
    edited without risk of breaking the ported renderer. */
 
+/* The renderer's "Show file" button always shows "Opened in File
+   Explorer" regardless of whether the request actually succeeded (see
+   app.js: it never checks the fetch response) — on a hosted server
+   there's no local file to reveal, so /api/reveal always 404s and this
+   always lies. Hidden via CSS rather than removed from the markup: the
+   button's click listener is wired with plain getElementById(...)
+   .addEventListener(...) with no null-check, so deleting the element
+   would throw and could break the renderer's other listener setup in
+   the same init function. See decisions/log.md. */
+#d-reveal {
+  display: none !important;
+}
+
 .chat-overlay {
   position: fixed;
   right: 20px;
