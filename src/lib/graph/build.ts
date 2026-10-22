@@ -19,6 +19,9 @@ const BRAIN_NAME = "Second Brain";
 const SOURCE_ID = "documents";
 const SOURCE_LABEL = "Documents";
 const SOURCE_COLOR = "#38BDF8";
+// Matches the original local-file tool's maxNodes default. No pagination
+// UI exists yet for beyond this — it's a safety cap, not a real limit.
+const MAX_NODES = 3000;
 
 interface GraphNode {
   id: string;
@@ -59,13 +62,16 @@ export async function buildGraph(orgId: string) {
     .from("documents")
     .select("id, title, raw_text, source, created_at")
     .eq("org_id", orgId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(MAX_NODES);
 
   if (error) throw new Error(`Failed to load documents: ${error.message}`);
 
   const warnings: string[] = [];
   if (!documents || documents.length === 0) {
     warnings.push("No documents ingested yet for this organization.");
+  } else if (documents.length >= MAX_NODES) {
+    warnings.push(`Reached the ${MAX_NODES}-document limit. Not all documents are shown.`);
   }
 
   const nodes: GraphNode[] = (documents ?? []).map((doc) => {
