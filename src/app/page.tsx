@@ -1,3 +1,5 @@
+import { ChatToggle } from "@/components/ChatToggle";
+
 /**
  * This is the 3D-Brain renderer's own markup (from the personal-AIOS
  * kit's .claude/skills/3d-brain/assets/template/index.html), ported in
@@ -136,6 +138,7 @@ const BRAIN_MARKUP = `
       <button class="btn mobile-sources" id="btn-sources" aria-expanded="false" aria-controls="legend">Sources</button>
       <button class="btn demo-primary" id="btn-demo" aria-pressed="false" title="Watch the brain grow from one idea (D)">Play demo</button>
       <button class="btn" id="btn-cinema" aria-pressed="false" title="Toggle cinema view (C)">Cinema</button>
+      <button class="btn" id="btn-chat" aria-pressed="false" title="Chat with your second brain">Chat</button>
     </div>
     <span class="mode-label">SECOND BRAIN <b>/</b> 3D</span>
   </footer>
@@ -144,6 +147,9 @@ const BRAIN_MARKUP = `
 const DISABLE_POINTER_LOCK = `for (const name of ['requestPointerLock', 'webkitRequestPointerLock', 'setCapture']) {
   Object.defineProperty(Element.prototype, name, { configurable: true, value: function () {} });
 }`;
+
+// TODO: replace with the signed-in user's actual org_id once Supabase Auth is wired in.
+const PLACEHOLDER_ORG_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function Home() {
   return (
@@ -157,6 +163,7 @@ export default function Home() {
       <script dangerouslySetInnerHTML={{ __html: DISABLE_POINTER_LOCK }} />
       <div dangerouslySetInnerHTML={{ __html: BRAIN_MARKUP }} />
       <script type="module" src="/app.js" />
+      <ChatToggle orgId={PLACEHOLDER_ORG_ID} />
     </>
   );
 }

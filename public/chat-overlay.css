@@ -1,0 +1,157 @@
+/* Chat overlay, layered on top of the 3D-Brain scene. Kept separate from
+   style.css (the renderer's own stylesheet, untouched) so this can be
+   edited without risk of breaking the ported renderer. */
+
+.chat-overlay {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 520px;
+  max-height: calc(100vh - 140px);
+  background: rgba(12, 14, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e6e8eb;
+  overflow: hidden;
+}
+
+.chat-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.chat-overlay-close {
+  background: none;
+  border: none;
+  color: #9aa1ab;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.chat-overlay-close:hover {
+  color: #e6e8eb;
+}
+
+.chat-overlay-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px;
+  gap: 8px;
+}
+
+.chat-overlay-body .turns {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-overlay-body .turn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-overlay-body .bubble {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 90%;
+}
+
+.chat-overlay-body .bubble.question {
+  align-self: flex-end;
+  background: #4f8cff;
+  color: #fff;
+}
+
+.chat-overlay-body .bubble.answer {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: pre-wrap;
+}
+
+.chat-overlay-body .sources {
+  align-self: flex-start;
+  max-width: 90%;
+  font-size: 11px;
+  color: #9aa1ab;
+  margin: 0;
+  padding-left: 14px;
+}
+
+.chat-overlay-body .empty-state {
+  color: #9aa1ab;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.chat-overlay-body .composer {
+  flex-shrink: 0;
+}
+
+.chat-overlay-body .composer-inner {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-overlay-body .composer input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6e8eb;
+  font-size: 13px;
+  outline: none;
+}
+
+.chat-overlay-body .composer input:focus {
+  border-color: #4f8cff;
+}
+
+.chat-overlay-body .composer button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #4f8cff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chat-overlay-body .composer button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .chat-overlay {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: 80px;
+  }
+}
