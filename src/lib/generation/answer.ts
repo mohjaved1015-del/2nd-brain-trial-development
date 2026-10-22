@@ -44,11 +44,12 @@ export async function generateAnswer(
   question: string,
   sources: SearchResult[],
   history: ChatHistoryTurn[] = [],
+  modelOverride?: string,
 ): Promise<AnswerResult> {
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) throw new Error("Missing NVIDIA_API_KEY");
 
-  const model = process.env.NVIDIA_MODEL ?? "nvidia/llama-3.1-nemotron-70b-instruct";
+  const model = modelOverride ?? process.env.NVIDIA_MODEL ?? "nvidia/llama-3.1-nemotron-70b-instruct";
   const context = sources.map((source, i) => `[${i + 1}] ${source.content}`).join("\n\n");
 
   const historyMessages = history.slice(-MAX_HISTORY_TURNS).flatMap((turn) => [

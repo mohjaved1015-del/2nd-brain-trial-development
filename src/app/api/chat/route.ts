@@ -34,10 +34,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { orgId, question, conversationId: requestedConversationId } = (await request.json()) as {
+  const {
+    orgId,
+    question,
+    conversationId: requestedConversationId,
+    modelOverride,
+  } = (await request.json()) as {
     orgId?: string;
     question?: string;
     conversationId?: string;
+    // TEMP, for testing which NVIDIA NIM models this account can access -
+    // remove once a working default model is confirmed. See decisions/log.md.
+    modelOverride?: string;
   };
 
   if (!orgId || !question) {
@@ -51,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const candidates = await keywordSearch(orgId, question);
     const topSources = await rerank(question, candidates);
-    const answer = await generateAnswer(question, topSources, history);
+    const answer = await generateAnswer(question, topSources, history, modelOverride);
 
     // Saved after generation succeeds, not before — a failed generation
     // call shouldn't leave a user message with no matching answer.
