@@ -62,6 +62,26 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.chat-overlay-body .turns.dragging {
+  background: rgba(79, 140, 255, 0.08);
+  outline: 2px dashed rgba(79, 140, 255, 0.5);
+  outline-offset: -4px;
+}
+
+.chat-overlay-body .drop-hint {
+  position: sticky;
+  top: 0;
+  text-align: center;
+  color: #4f8cff;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  pointer-events: none;
 }
 
 .chat-overlay-body .turn {
@@ -145,6 +165,17 @@
 .chat-overlay-body .composer button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.chat-overlay-body .attach-button {
+  padding: 10px 14px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+.chat-overlay-body .attach-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14) !important;
 }
 
 @media (max-width: 480px) {

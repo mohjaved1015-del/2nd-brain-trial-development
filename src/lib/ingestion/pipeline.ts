@@ -10,6 +10,11 @@ export interface IngestOptions {
   filename: string;
 }
 
+export interface IngestResult {
+  documentId: string;
+  chunkCount: number;
+}
+
 /**
  * The one swappable seam the architecture doc calls for: trial data today,
  * real customer sources (Drive, CRM, email) later, all through this same
@@ -20,10 +25,32 @@ export interface IngestOptions {
  * an embedding. The `chunks.embedding` column stays nullable for when
  * vector search comes back.
  */
-export async function ingestDocument({ orgId, source, title, file, filename }: IngestOptions) {
+export async function ingestDocument({ orgId, source, title, file, filename }: IngestOptions): Promise<IngestResult> {
   const rawText = await parseDocument(file, filename);
-  const chunks = chunkText(rawText);
+  return storeDocument(orgId, source, title, rawText);
+}
 
+/**
+ * Fetches a URL server-side and runs it through the same pipeline as a
+ * direct upload. Scoped to direct file links (a PDF/Word/text/image URL
+ * a server can fetch and parse) — not a general web-page scraper. A link
+ * to an ordinary web page will still get "parsed" as whatever raw bytes
+ * come back, which may not produce useful text; that's a known limit,
+ * not a bug to chase here.
+ */
+export async function ingestFromUrl(orgId: string, source: string, url: string): Promise<IngestResult> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const filename = new URL(url).pathname.split("/").pop() || "linked-document";
+  const rawText = await parseDocument(buffer, filename);
+
+  return storeDocument(orgId, source, filename, rawText);
+}
+
+async function storeDocument(orgId: string, source: string, title: string, rawText: string): Promise<IngestResult> {
+  const chunks = chunkText(rawText);
   const supabase = createServiceClient();
 
   const { data: document, error: documentError } = await supabase
