@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { keywordSearch } from "@/lib/retrieval/search";
 import { rerank } from "@/lib/retrieval/rerank";
 import { generateAnswer } from "@/lib/generation/answer";
-import { appendMessage, getOrCreateConversation, loadMessages, toHistoryTurns } from "@/lib/conversations/store";
+import { appendMessage, getOrCreateConversation, loadMessages, toHistoryTurns, touchConversation } from "@/lib/conversations/store";
 
 /**
  * Chat endpoint. Resolves candidates via keyword search, reranks, then
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     // call shouldn't leave a user message with no matching answer.
     await appendMessage(conversationId, orgId, "user", question, []);
     await appendMessage(conversationId, orgId, "assistant", answer.text, answer.citedSources);
+    await touchConversation(conversationId);
 
     return NextResponse.json({ ...answer, conversationId });
   } catch (error) {

@@ -83,6 +83,14 @@ export async function appendMessage(
     sources,
   });
   if (error) throw new Error(`Failed to save message: ${error.message}`);
+}
 
+/**
+ * Updates the conversation's `updated_at`. Separate from `appendMessage`
+ * so a chat turn that saves two messages (user + assistant) only touches
+ * this once, not twice.
+ */
+export async function touchConversation(conversationId: string): Promise<void> {
+  const supabase = createServiceClient();
   await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
 }
