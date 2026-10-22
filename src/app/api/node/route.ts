@@ -16,23 +16,29 @@ const PLACEHOLDER_ORG_ID = "00000000-0000-0000-0000-000000000000";
  * be readable regardless of which org's graph page requested it.
  */
 export async function GET(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get("id");
-  const orgId = request.nextUrl.searchParams.get("orgId") ?? PLACEHOLDER_ORG_ID;
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  try {
+    const id = request.nextUrl.searchParams.get("id");
+    const orgId = request.nextUrl.searchParams.get("orgId") ?? PLACEHOLDER_ORG_ID;
+    if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-  const supabase = createServiceClient();
-  const { data: document, error } = await supabase
-    .from("documents")
-    .select("id, raw_text, storage_path")
-    .eq("id", id)
-    .eq("org_id", orgId)
-    .single();
+    const supabase = createServiceClient();
+    const { data: document, error } = await supabase
+      .from("documents")
+      .select("id, raw_text, storage_path")
+      .eq("id", id)
+      .eq("org_id", orgId)
+      .single();
 
-  if (error || !document) return NextResponse.json({ error: "Unknown document" }, { status: 404 });
+    if (error || !document) return NextResponse.json({ error: "Unknown document" }, { status: 404 });
 
-  const fileUrl = document.storage_path
-    ? supabase.storage.from("documents").getPublicUrl(document.storage_path).data.publicUrl
-    : null;
+    const fileUrl = document.storage_path
+      ? supabase.storage.from("documents").getPublicUrl(document.storage_path).data.publicUrl
+      : null;
 
-  return NextResponse.json({ id: document.id, markdown: document.raw_text, path: document.id, fileUrl });
+    return NextResponse.json({ id: document.id, markdown: document.raw_text, path: document.id, fileUrl });
+  } catch (error) {
+    console.error("node route failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

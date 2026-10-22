@@ -8,17 +8,17 @@ import { ingestFromUrl } from "@/lib/ingestion/pipeline";
  * in.
  */
 export async function POST(request: NextRequest) {
-  const { orgId, source, url } = (await request.json()) as {
-    orgId?: string;
-    source?: string;
-    url?: string;
-  };
-
-  if (!orgId || !url) {
-    return NextResponse.json({ error: "orgId and url are required" }, { status: 400 });
-  }
-
   try {
+    const { orgId, source, url } = (await request.json()) as {
+      orgId?: string;
+      source?: string;
+      url?: string;
+    };
+
+    if (!orgId || !url) {
+      return NextResponse.json({ error: "orgId and url are required" }, { status: 400 });
+    }
+
     const result = await ingestFromUrl(orgId, source ?? "link", url);
     return NextResponse.json(result);
   } catch (error) {

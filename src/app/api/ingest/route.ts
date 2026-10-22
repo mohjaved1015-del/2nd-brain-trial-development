@@ -7,16 +7,16 @@ import { ingestDocument } from "@/lib/ingestion/pipeline";
  * Auth is wired in.
  */
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const orgId = formData.get("orgId");
-  const source = formData.get("source");
-  const file = formData.get("file");
-
-  if (typeof orgId !== "string" || typeof source !== "string" || !(file instanceof File)) {
-    return NextResponse.json({ error: "orgId, source, and file are required" }, { status: 400 });
-  }
-
   try {
+    const formData = await request.formData();
+    const orgId = formData.get("orgId");
+    const source = formData.get("source");
+    const file = formData.get("file");
+
+    if (typeof orgId !== "string" || typeof source !== "string" || !(file instanceof File)) {
+      return NextResponse.json({ error: "orgId, source, and file are required" }, { status: 400 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await ingestDocument({
       orgId,

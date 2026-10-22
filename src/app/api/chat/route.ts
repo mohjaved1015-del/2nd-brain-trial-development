@@ -34,17 +34,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { orgId, question, conversationId: requestedConversationId } = (await request.json()) as {
-    orgId?: string;
-    question?: string;
-    conversationId?: string;
-  };
-
-  if (!orgId || !question) {
-    return NextResponse.json({ error: "orgId and question are required" }, { status: 400 });
-  }
-
   try {
+    const { orgId, question, conversationId: requestedConversationId } = (await request.json()) as {
+      orgId?: string;
+      question?: string;
+      conversationId?: string;
+    };
+
+    if (!orgId || !question) {
+      return NextResponse.json({ error: "orgId and question are required" }, { status: 400 });
+    }
+
     const conversationId = await getOrCreateConversation(orgId, requestedConversationId);
     const priorMessages = await loadMessages(conversationId, orgId);
     const history = toHistoryTurns(priorMessages);
