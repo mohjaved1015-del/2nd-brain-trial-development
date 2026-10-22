@@ -1,5 +1,6 @@
 import { ChatToggle } from "@/components/ChatToggle";
 import { RevealBridge } from "@/components/RevealBridge";
+import { PLACEHOLDER_ORG_ID } from "@/lib/constants";
 
 /**
  * This is the 3D-Brain renderer's own markup (from the personal-AIOS
@@ -148,9 +149,6 @@ const BRAIN_MARKUP = `
 const DISABLE_POINTER_LOCK = `for (const name of ['requestPointerLock', 'webkitRequestPointerLock', 'setCapture']) {
   Object.defineProperty(Element.prototype, name, { configurable: true, value: function () {} });
 }`;
-
-// TODO: replace with the signed-in user's actual org_id once Supabase Auth is wired in.
-const PLACEHOLDER_ORG_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function Home() {
   return (

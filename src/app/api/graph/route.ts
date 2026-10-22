@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildGraph } from "@/lib/graph/build";
-
-// TODO: replace with the signed-in user's actual org_id once Supabase Auth is wired in.
-const PLACEHOLDER_ORG_ID = "00000000-0000-0000-0000-000000000000";
+import { PLACEHOLDER_ORG_ID } from "@/lib/constants";
 
 /**
  * Serves the 3D-Brain renderer's graph data. The renderer calls this on
