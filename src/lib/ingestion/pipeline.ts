@@ -54,6 +54,11 @@ export async function ingestFromUrl(orgId: string, source: string, url: string):
   return storeDocument(orgId, source, filename, rawText, buffer, filename);
 }
 
+/** Keeps only characters safe in a Supabase Storage path / public URL. */
+function sanitizeFilename(filename: string): string {
+  return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
 async function storeDocument(
   orgId: string,
   source: string,
@@ -65,36 +70,33 @@ async function storeDocument(
   const chunks = chunkText(rawText);
   const supabase = createServiceClient();
 
-  const { data: document, error: documentError } = await supabase
-    .from("documents")
-    .insert({ org_id: orgId, source, title, raw_text: rawText })
-    .select("id")
-    .single();
+  // document + chunks insert happens atomically in one Postgres function
+  // call (migration 0008) — a document with zero extractable chunks is
+  // rejected outright, and a failure partway through can't leave an
+  // orphaned document with no chunks, since the whole call is one
+  // transaction.
+  const { data: documentId, error: ingestError } = await supabase.rpc("ingest_document", {
+    p_org_id: orgId,
+    p_source: source,
+    p_title: title,
+    p_raw_text: rawText,
+    p_chunks: chunks.map((chunk) => ({ chunk_index: chunk.index, content: chunk.content })),
+  });
 
-  if (documentError || !document) {
-    throw new Error(`Failed to insert document: ${documentError?.message}`);
+  if (ingestError || !documentId) {
+    throw new Error(`Failed to ingest document: ${ingestError?.message ?? "no document id returned"}`);
   }
-
-  const rows = chunks.map((chunk) => ({
-    org_id: orgId,
-    document_id: document.id,
-    chunk_index: chunk.index,
-    content: chunk.content,
-  }));
-
-  const { error: chunksError } = await supabase.from("chunks").insert(rows);
-  if (chunksError) throw new Error(`Failed to insert chunks: ${chunksError.message}`);
 
   // Best-effort: a failed original-file upload shouldn't fail the whole
   // ingestion, since the document's text content (the part retrieval and
   // chat actually depend on) is already safely stored either way.
-  const storagePath = `${orgId}/${document.id}-${filename}`;
+  const storagePath = `${orgId}/${documentId}-${sanitizeFilename(filename)}`;
   const { error: storageError } = await supabase.storage.from("documents").upload(storagePath, originalFile);
   if (!storageError) {
-    await supabase.from("documents").update({ storage_path: storagePath }).eq("id", document.id);
+    await supabase.from("documents").update({ storage_path: storagePath }).eq("id", documentId);
   } else {
     console.error("Failed to store original file (text content was still saved):", storageError.message);
   }
 
-  return { documentId: document.id, chunkCount: rows.length };
+  return { documentId, chunkCount: chunks.length };
 }
