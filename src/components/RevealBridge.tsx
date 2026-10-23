@@ -43,6 +43,17 @@ import { useEffect } from "react";
  *    a normal link click works, never flagged. The server resolves the
  *    file and redirects, or returns an explanatory message if no
  *    original was stored (documents ingested before migration 0006).
+ * 3. Even called synchronously with a real URL and no async step,
+ *    `window.open()` is still the popup API — browsers are free to
+ *    treat any JS-initiated `window.open` as a popup and block it
+ *    silently (no console error, nothing to debug), and some are
+ *    stricter about this than others, which is exactly why this kept
+ *    reproducing in MJ's real browser specifically. Confirmed directly:
+ *    testing this build, the browser tool itself reported blocking the
+ *    `window.open` call as a popup. A real `<a href target="_blank">`
+ *    click is not a popup to any browser — it is the standard
+ *    navigation path — so this now builds a real anchor element and
+ *    clicks it instead of calling `window.open` at all.
  */
 export function RevealBridge({ orgId }: { orgId: string }) {
   useEffect(() => {
@@ -55,11 +66,13 @@ export function RevealBridge({ orgId }: { orgId: string }) {
     function handleClick() {
       const nodeId = new URL(window.location.href).searchParams.get("node");
       if (!nodeId) return;
-      window.open(
-        `/api/reveal?id=${encodeURIComponent(nodeId)}&orgId=${encodeURIComponent(orgId)}`,
-        "_blank",
-        "noopener,noreferrer",
-      );
+      const link = document.createElement("a");
+      link.href = `/api/reveal?id=${encodeURIComponent(nodeId)}&orgId=${encodeURIComponent(orgId)}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     }
 
     clone.addEventListener("click", handleClick);

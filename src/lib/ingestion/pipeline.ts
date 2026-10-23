@@ -59,6 +59,34 @@ function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
+/**
+ * Supabase Storage defaults an upload's content-type to `text/plain` when
+ * none is given — fine for the extracted text, but the original PDF/Word/
+ * image upload was going through with no contentType option at all, so
+ * every original file was stored as `text/plain` regardless of its real
+ * type. The browser then has no way to know it's a PDF or a .docx, so
+ * "Show file" opened garbled raw bytes as text instead of rendering the
+ * PDF inline or downloading the Word file properly. Fixed by deriving the
+ * real MIME type from the extension and passing it on upload.
+ */
+function contentTypeFor(filename: string): string {
+  const ext = filename.toLowerCase().split(".").pop() ?? "";
+  const byExt: Record<string, string> = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    txt: "text/plain",
+    md: "text/markdown",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+  };
+  return byExt[ext] ?? "application/octet-stream";
+}
+
 async function storeDocument(
   orgId: string,
   source: string,
@@ -91,7 +119,9 @@ async function storeDocument(
   // ingestion, since the document's text content (the part retrieval and
   // chat actually depend on) is already safely stored either way.
   const storagePath = `${orgId}/${documentId}-${sanitizeFilename(filename)}`;
-  const { error: storageError } = await supabase.storage.from("documents").upload(storagePath, originalFile);
+  const { error: storageError } = await supabase.storage
+    .from("documents")
+    .upload(storagePath, originalFile, { contentType: contentTypeFor(filename) });
   if (!storageError) {
     await supabase.from("documents").update({ storage_path: storagePath }).eq("id", documentId);
   } else {
