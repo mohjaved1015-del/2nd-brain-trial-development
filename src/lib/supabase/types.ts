@@ -16,6 +16,7 @@ export interface Document {
   title: string;
   raw_text: string;
   storage_path: string | null;
+  folder_path: string;
   metadata: Record<string, unknown>;
   created_at: string;
 }

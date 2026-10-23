@@ -1,0 +1,222 @@
+/* Manage-files overlay, layered on top of the 3D-Brain scene. Same
+   pattern as chat-overlay.css — kept separate so it can be edited
+   without risk of breaking the ported renderer's own style.css. */
+
+.files-overlay {
+  position: fixed;
+  left: 20px;
+  bottom: 90px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  height: 560px;
+  max-height: calc(100vh - 140px);
+  background: rgba(12, 14, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e6e8eb;
+  overflow: hidden;
+}
+
+.files-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.files-overlay-close {
+  background: none;
+  border: none;
+  color: #9aa1ab;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.files-overlay-close:hover {
+  color: #e6e8eb;
+}
+
+.files-overlay-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.files-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.files-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.files-toolbar button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6e8eb;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.files-toolbar button.primary {
+  background: #4f8cff;
+  border-color: transparent;
+  color: #fff;
+}
+
+.files-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.files-section h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9aa1ab;
+}
+
+.folder-tree {
+  border-radius: 8px;
+  padding: 6px;
+  transition: background 0.15s ease, outline 0.15s ease;
+}
+
+.folder-tree.drop-target {
+  background: rgba(79, 140, 255, 0.08);
+  outline: 2px dashed rgba(79, 140, 255, 0.5);
+  outline-offset: -2px;
+}
+
+.folder-node {
+  margin-top: 2px;
+}
+
+.folder-label {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.folder-label::-webkit-details-marker {
+  display: none;
+}
+
+.folder-label:hover,
+.folder-label.drop-target {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.folder-label.drop-target {
+  outline: 2px dashed rgba(79, 140, 255, 0.5);
+  outline-offset: -2px;
+}
+
+.root-label {
+  font-weight: 500;
+  padding: 6px 8px;
+}
+
+.folder-count {
+  color: #9aa1ab;
+  font-size: 11px;
+}
+
+.folder-children {
+  margin-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 10px;
+}
+
+.file-row {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: grab;
+  color: #c6cad1;
+}
+
+.file-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-list-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #c6cad1;
+}
+
+.file-list-row input {
+  width: 150px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6e8eb;
+  font-size: 12px;
+  outline: none;
+}
+
+.file-list-row input:focus {
+  border-color: #4f8cff;
+}
+
+.files-panel .empty-state {
+  color: #9aa1ab;
+  text-align: center;
+  padding: 12px 0;
+}
+
+@media (max-width: 480px) {
+  .files-overlay {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: 80px;
+  }
+
+  .file-list-row {
+    flex-wrap: wrap;
+  }
+
+  .file-list-row input {
+    width: 100%;
+  }
+}

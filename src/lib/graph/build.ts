@@ -8,11 +8,12 @@ import { createServiceClient } from "@/lib/supabase/server";
  *
  * One node per document (not per chunk) — a business's PDFs/FAQs don't
  * have the wikilink structure the original tool used to draw real
- * connections, so for now nodes have no computed links (empty `links`),
- * grouped visually by category only. This is a known, documented
- * simplification (see decisions/log.md): real connections (shared
- * topics/keywords, or embeddings-based similarity if that comes back)
- * are a follow-up, not implemented here.
+ * connections. MJ's explicit call over automatic keyword/embedding
+ * similarity (see decisions/log.md): connections are manual, via the
+ * "Manage files" folder tree (ManageFilesPanel.tsx, folder_path column,
+ * migration 0009) — two documents link to each other only when they sit
+ * in the exact same folder path. A document with no folder_path set
+ * ("" — unfiled) gets no links, same as before this existed.
  */
 
 const BRAIN_NAME = "Second Brain";
@@ -42,6 +43,7 @@ interface GraphNode {
   broken: string[];
   ageDays: number;
   linkTargets: Record<string, string | null>;
+  folderPath: string;
 }
 
 function slugify(title: string): string {
@@ -60,7 +62,7 @@ export async function buildGraph(orgId: string) {
 
   const { data: documents, error } = await supabase
     .from("documents")
-    .select("id, title, raw_text, source, created_at")
+    .select("id, title, raw_text, source, folder_path, created_at")
     .eq("org_id", orgId)
     .order("created_at", { ascending: true })
     .limit(MAX_NODES);
@@ -81,6 +83,8 @@ export async function buildGraph(orgId: string) {
     const flags: string[] = [];
     if (words < 60) flags.push("stub");
 
+    const folderPath = doc.folder_path ?? "";
+
     return {
       id: doc.id,
       source: SOURCE_ID,
@@ -94,16 +98,38 @@ export async function buildGraph(orgId: string) {
       updated,
       created: updated,
       words,
-      tags: [],
+      tags: folderPath ? [folderPath] : [],
       degree: 0,
       flags,
       broken: [],
       ageDays,
       linkTargets: {},
+      folderPath,
     };
   });
 
+  // Two documents link only when they sit in the exact same folder
+  // path — see the module doc comment above. An unfiled document
+  // (folderPath === "") stays isolated, same as before folders existed.
   const links: Array<{ source: string; target: string; kind: string }> = [];
+  const byFolder = new Map<string, GraphNode[]>();
+  for (const node of nodes) {
+    if (!node.folderPath) continue;
+    const bucket = byFolder.get(node.folderPath) ?? [];
+    bucket.push(node);
+    byFolder.set(node.folderPath, bucket);
+  }
+  for (const bucket of byFolder.values()) {
+    for (let i = 0; i < bucket.length; i++) {
+      for (let j = i + 1; j < bucket.length; j++) {
+        const a = bucket[i]!;
+        const b = bucket[j]!;
+        links.push({ source: a.id, target: b.id, kind: "folder" });
+        a.degree += 1;
+        b.degree += 1;
+      }
+    }
+  }
 
   const generatedAt = new Date().toISOString();
   const bySource = {

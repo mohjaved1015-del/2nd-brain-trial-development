@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <link rel="stylesheet" href="/style.css" />
         <link rel="stylesheet" href="/chat-overlay.css" />
+        <link rel="stylesheet" href="/files-overlay.css" />
       </head>
       <body>{children}</body>
     </html>

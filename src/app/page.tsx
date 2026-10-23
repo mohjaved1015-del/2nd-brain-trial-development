@@ -1,5 +1,6 @@
 import { ChatToggle } from "@/components/ChatToggle";
 import { RevealBridge } from "@/components/RevealBridge";
+import { FilesToggle } from "@/components/FilesToggle";
 import { PLACEHOLDER_ORG_ID } from "@/lib/constants";
 
 /**
@@ -141,6 +142,7 @@ const BRAIN_MARKUP = `
       <button class="btn demo-primary" id="btn-demo" aria-pressed="false" title="Watch the brain grow from one idea (D)">Play demo</button>
       <button class="btn" id="btn-cinema" aria-pressed="false" title="Toggle cinema view (C)">Cinema</button>
       <button class="btn" id="btn-chat" aria-pressed="false" title="Chat with your second brain">Chat</button>
+      <button class="btn" id="btn-files" aria-pressed="false" title="Organize documents into folders">Files</button>
     </div>
     <span class="mode-label">SECOND BRAIN <b>/</b> 3D</span>
   </footer>
@@ -164,6 +166,7 @@ export default function Home() {
       <script type="module" src="/app.js" />
       <ChatToggle orgId={PLACEHOLDER_ORG_ID} />
       <RevealBridge orgId={PLACEHOLDER_ORG_ID} />
+      <FilesToggle orgId={PLACEHOLDER_ORG_ID} />
     </>
   );
 }
